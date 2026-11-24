@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Pip Patrol</title>
+<meta name="description" content="Pip Patrol is a cute, touch-friendly space shooter. Boop the blobs and keep the sparkle sky safe.">
+<meta name="theme-color" content="#1b1446">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pip Patrol">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-mode="port">
+<div id="app">
+  <main id="stage">
+    <header id="hud">
+      <div class="stat"><span class="lab">Score</span><b id="score">0</b></div>
+      <div class="stat"><span class="lab">Best</span><b id="best">0</b></div>
+      <div class="stat"><span class="lab">Wave</span><b id="wave">1</b></div>
+      <div class="lives" aria-label="Lives left">
+        <svg viewBox="0 0 24 24"><path d="M12 21s-8-5.2-8-11a4.6 4.6 0 0 1 8-3 4.6 4.6 0 0 1 8 3c0 5.800-8 11-8 11z" fill="#ff7eb6" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        <b id="livesN">3</b>
+      </div>
+      <div class="sp"></div>
+      <button id="btnSound" class="ibtn" aria-label="Sound" aria-pressed="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z" fill="#fff"/><g class="on"><path d="M16.500 8.500a5 5 0 0 1 0 7"/><path d="M19 6a8.500 8.500 0 0 1 0 12"/></g><path class="off" d="M17 9l5 6M22 9l-5 6"/></svg>
+      </button>
+      <button id="btnPause" class="ibtn" aria-label="Pause">
+        <svg viewBox="0 0 24 24" fill="#fff"><rect x="6" y="5" width="4" height="14" rx="1.500"/><rect x="14" y="5" width="4" height="14" rx="1.500"/></svg>
+      </button>
+    </header>
+    <div id="field">
+      <canvas id="c" aria-label="Pip Patrol game board"></canvas>
+      <div id="fx">
+        <span class="chip" id="chipTriple" hidden style="--c:#ff7eb6">TRIPLE<i></i></span>
+        <span class="chip" id="chipRapid" hidden style="--c:#ffd96b">RAPID<i></i></span>
+        <span class="chip" id="chipSlow" hidden style="--c:#6ee7c8">SLOW<i></i></span>
+        <span class="chip" id="chipBubble" hidden style="--c:#7cc4ff">BUBBLE<i style="transform:none"></i></span>
+      </div>
+      <div id="banner" aria-live="polite"></div>
+      <div id="overlay">
+        <section class="card" id="menu">
+          <h1 aria-label="Pip Patrol"><span style="--i:0">P</span><span style="--i:1">i</span><span style="--i:2">p</span><span class="gap" style="--i:3"></span><span style="--i:4">P</span><span style="--i:5">a</span><span style="--i:6">t</span><span style="--i:7">r</span><span style="--i:8">o</span><span style="--i:9">l</span></h1>
+          <p class="tag">Boop the blobs. Keep the sparkle sky safe.</p>
+          <div class="seg" role="group" aria-label="Difficulty">
+            <button id="dEasy" data-d="easy" aria-pressed="false">Easy</button>
+            <button id="dNormal" data-d="normal" aria-pressed="true">Normal</button>
+            <button id="dHard" data-d="hard" aria-pressed="false">Hard</button>
+          </div>
+          <div class="toggles">
+            <button class="tog" id="tgSound" aria-pressed="true">Sound</button>
+            <button class="tog" id="tgVib" aria-pressed="true">Vibration</button>
+          </div>
+          <p class="best">Best score: <b id="menuBest">0</b></p>
+          <button class="big" id="btnPlay">Play</button>
+          <button class="big alt" id="btnInstall" hidden>Install app</button>
+          <p class="hint" id="hint"></p>
+          <p class="hint" id="iosHint" hidden>To install on iPhone or iPad, tap Share, then Add to Home Screen.</p>
+        </section>
+        <section class="card" id="pause" hidden>
+          <h2>Paused</h2>
+          <button class="big" id="btnResume">Resume</button>
+          <button class="big alt" id="btnQuit">Quit to menu</button>
+        </section>
+        <section class="card" id="over" hidden>
+          <h2>Game over</h2>
+          <div class="final" id="finalScore">0</div>
+          <span class="newbest" id="newBest" hidden>New best score!</span>
+          <p class="best">Best: <b id="overBest">0</b> &middot; Wave <b id="overWave">1</b></p>
+          <button class="big" id="btnAgain">Play again</button>
+          <button class="big alt" id="btnMenu">Menu</button>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <div id="padL">
+    <div id="dpad" role="group" aria-label="Move left or right">
+      <div class="half"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></div>
+      <div class="half"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></div>
+    </div>
+  </div>
+  <div id="padR">
+    <button id="fire" aria-label="Fire">
+      <svg viewBox="0 0 24 24"><path d="M12 2.500l2.900 6.100 6.600.8-4.900 4.600 1.300 6.600L12 17.300 6.100 20.600l1.300-6.600L2.500 9.400l6.600-.8z" fill="#ffd96b" stroke="#fff" stroke-width="1.600" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+</div>
+
+<noscript>Pip Patrol needs JavaScript to run.</noscript>
+<script src="js/game.js"></script>
+<script src="js/pwa.js"></script>
+</body>
+</html>
