@@ -92,13 +92,13 @@ const baseOy = () => mode === 'port' ? 68 : 64;
 const UFO_Y = 26;
 
 const S = { state: 'menu', score: 0, lives: 3, wave: 0, best: 0, clock: 0, shake: 0, banner: 0, clearT: 0, ufoT: 12, fireT: 1.2, ufoSnd: 0,
-            isBoss: false, newBest: false, nextUp: 2500, fx: { triple: 0, rapid: 0, slow: 0 }, hudDirty: true };
+            isBoss: false, newBest: false, nextUp: 2500, fx: { triple: 0, rapid: 0, slow: 0, bubble: 0, super: 0 }, hudDirty: true };
 const input = { tl: false, tr: false, kl: false, kr: false, tf: false, kf: false };
 let P, form, aliens = [], shields = [], pB = [], eB = [], parts = [], pops = [], pows = [], ufo = null, boss = null;
 
 const stars = Array.from({ length: 80 }, () => ({ x: rand(0, 600), y: rand(0, 560), r: rand(.6, 1.7), v: rand(3, 14), ph: rand(0, TAU) }));
 
-function newPlayer() { P = { x: W / 2, y: H - 34, cd: 0, inv: 0, bubble: false }; }
+function newPlayer() { P = { x: W / 2, y: H - 34, cd: 0, inv: 0, superHits: 0 }; }
 
 function buildForm() {
   const port = mode === 'port';
@@ -192,7 +192,7 @@ function startGame() {
   D = DIFFS[settings.diff] || DIFFS.normal;
   Snd.init(); Snd.setEnabled(settings.sound);
   S.score = 0; S.lives = D.lives; S.wave = 0; S.nextUp = 2500; S.newBest = false;
-  S.fx.triple = S.fx.rapid = S.fx.slow = 0;
+  S.fx.triple = S.fx.rapid = S.fx.slow = S.fx.bubble = S.fx.super = 0;
   S.best = store.get(bestKey(), 0);
   pB = []; eB = []; parts = []; pops = []; pows = []; ufo = null; boss = null;
   newPlayer();
@@ -252,7 +252,7 @@ function shoot() {
 }
 function hitPlayer() {
   if (P.inv > 0) return;
-  if (P.bubble) { P.bubble = false; P.inv = .9; burst(P.x, P.y, 14, [SKY, '#fff'], { g: 0 }); Snd.pop(); vib(20); return; }
+  if (activeShield()) { shieldHit(); P.inv = .9; return; }
   S.lives--; P.inv = 2.2; S.shake = .35; eB = [];
   burst(P.x, P.y, 24, [PINK, BUTTER, '#fff']); Snd.hit(); vib([60, 40, 80]); hud();
   if (S.lives <= 0) gameOver();
@@ -262,11 +262,24 @@ function invade() {
   burst(P.x, P.y, 24, [PINK, BUTTER, '#fff']); Snd.hit(); vib([60, 40, 80]); hud();
   if (S.lives <= 0) gameOver();
 }
-const POW_TYPES = ['triple', 'triple', 'triple', 'rapid', 'rapid', 'rapid', 'bubble', 'bubble', 'slow', 'slow'];
+/* Shields: the bubble lasts 10s and pops on one hit. The super shield has 3x the radius, lasts 3x as long (30s) and takes 3 hits. */
+const BUBBLE_R = 28, BUBBLE_T = 10, SUPER_R = BUBBLE_R * 3, SUPER_T = BUBBLE_T * 3, SUPER_HITS = 3;
+const activeShield = () => S.fx.super > 0 ? 'super' : S.fx.bubble > 0 ? 'bubble' : null;
+const shieldRadius = () => activeShield() === 'super' ? SUPER_R : BUBBLE_R;
+function shieldHit() {
+  const sup = activeShield() === 'super';
+  burst(P.x, P.y - 3, sup ? 18 : 14, sup ? [BUTTER, '#fff', PINK] : [SKY, '#fff'], { g: 0 });
+  Snd.pop(); vib(20);
+  if (sup) { if (--P.superHits <= 0) { S.fx.super = 0; pop(P.x, P.y - 40, 'Shield gone', BUTTER); } }
+  else S.fx.bubble = 0;
+}
+const POW_TYPES = ['triple', 'triple', 'triple', 'rapid', 'rapid', 'rapid', 'bubble', 'bubble', 'slow', 'slow', 'super'];
 function spawnPow(x, y) { pows.push({ x, y, type: POW_TYPES[Math.floor(Math.random() * POW_TYPES.length)], t: rand(0, TAU) }); }
 function collect(p) {
-  const names = { triple: 'Triple shot!', rapid: 'Rapid fire!', bubble: 'Bubble shield!', slow: 'Slow-mo!' };
-  if (p.type === 'bubble') P.bubble = true; else S.fx[p.type] = p.type === 'slow' ? 6 : 10;
+  const names = { triple: 'Triple shot!', rapid: 'Rapid fire!', bubble: 'Bubble shield!', slow: 'Slow-mo!', super: 'SUPER shield!' };
+  const secs = { triple: 10, rapid: 10, slow: 6, bubble: BUBBLE_T, super: SUPER_T };
+  S.fx[p.type] = secs[p.type];
+  if (p.type === 'super') P.superHits = SUPER_HITS;
   pop(P.x, P.y - 36, names[p.type], BUTTER); Snd.power(); vib(18); burst(p.x, p.y, 10, [BUTTER, '#fff'], { g: 0, max: 120 });
 }
 function killAlien(a) {
@@ -370,7 +383,7 @@ function updBoss(dt, ts) {
 }
 function update(dt) {
   const ts = S.fx.slow > 0 ? .45 : 1;
-  for (const k of ['triple', 'rapid', 'slow']) if (S.fx[k] > 0) S.fx[k] = Math.max(0, S.fx[k] - dt);
+  for (const k of ['triple', 'rapid', 'slow', 'bubble', 'super']) if (S.fx[k] > 0) S.fx[k] = Math.max(0, S.fx[k] - dt);
   P.inv = Math.max(0, P.inv - dt);
   const dir = ((input.tl || input.kl) ? -1 : 0) + ((input.tr || input.kr) ? 1 : 0);
   P.x = clamp(P.x + dir * 250 * dt, 18, W - 18);
@@ -395,6 +408,7 @@ function update(dt) {
     const b = eB[i]; b.x += b.vx * dt * ts; b.y += b.vy * dt * ts;
     if (b.y > H + 10 || b.x < -10 || b.x > W + 10) { eB.splice(i, 1); continue; }
     if (hitShield(b.x, b.y, b.r > 5 ? 2.1 : 1.7)) { eB.splice(i, 1); continue; }
+    if (activeShield() && Math.hypot(b.x - P.x, b.y - (P.y - 3)) < shieldRadius() + b.r) { eB.splice(i, 1); shieldHit(); continue; }
     if (Math.abs(b.x - P.x) < 11 + b.r * .4 && b.y > P.y - 18 && b.y < P.y + 16) { eB.splice(i, 1); hitPlayer(); if (S.state !== 'play') return; }
   }
   for (let i = pows.length - 1; i >= 0; i--) {
@@ -487,24 +501,31 @@ function drawPlayer() {
   ell(-1.9, -1.8, .9, 1.1, INK); ell(1.9, -1.8, .9, 1.1, INK); smile(0, -1.2, 2, 1.1);
   ctx.restore();
 }
-function drawBubble() {
-  if (!P.bubble) return;
+function drawShield() {
+  const kind = activeShield();
+  if (!kind) return;
+  const sup = kind === 'super', R = shieldRadius(), left = sup ? S.fx.super : S.fx.bubble;
+  if (left < 2.5 && Math.floor(S.clock * 8) % 2) return;            // blink when about to run out
   ctx.save(); ctx.translate(P.x, P.y - 3);
-  ctx.fillStyle = 'rgba(124,196,255,.2)'; ctx.beginPath(); ctx.arc(0, 0, 28, 0, TAU); ctx.fill();
-  ctx.strokeStyle = 'rgba(200,235,255,.9)'; ctx.lineWidth = 2; ctx.stroke();
-  ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(0, 0, 21, 3.7, 4.5); ctx.stroke();
-  ctx.restore();
-}
-function drawUfo(u, t) {
-  ctx.save(); ctx.translate(u.x, u.y + Math.sin(t * 6) * 1.5);
-  ell(0, -5, 9, 8, 'rgba(200,245,255,.9)'); ell(0, -4, 5, 5, PINK); ell(-1.7, -5, .9, 1, INK); ell(1.7, -5, .9, 1, INK);
-  ell(0, 7, 10, 3.5, LAV_D); ell(0, 2, 18, 7, LAV);
-  const cols = [BUTTER, PINK, MINT, SKY, BUTTER];
-  for (let i = 0; i < 5; i++) ell(-12 + i * 6, 2.5, 1.7, 1.7, Math.floor(t * 8 + i) % 2 ? cols[i] : '#fff');
+  if (sup) {
+    const g = ctx.createRadialGradient(0, 0, R * .55, 0, 0, R);
+    g.addColorStop(0, 'rgba(255,217,107,.04)'); g.addColorStop(1, 'rgba(255,217,107,.3)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, R, 0, TAU); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,236,160,.95)'; ctx.lineWidth = 3; ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,126,182,.6)'; ctx.lineWidth = 2; ctx.setLineDash([10, 9]); ctx.lineDashOffset = -S.clock * 30;
+    ctx.beginPath(); ctx.arc(0, 0, R - 7, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(0, 0, R * .78, 3.7, 4.5); ctx.stroke();
+    ctx.fillStyle = BUTTER;                                            // one orbiting star per hit left
+    for (let i = 0; i < P.superHits; i++) star(Math.cos(S.clock * 2 + i * TAU / 3) * (R - 3), Math.sin(S.clock * 2 + i * TAU / 3) * (R - 3), 6, S.clock * 3);
+  } else {
+    ctx.fillStyle = 'rgba(124,196,255,.2)'; ctx.beginPath(); ctx.arc(0, 0, R, 0, TAU); ctx.fill();
+    ctx.strokeStyle = 'rgba(200,235,255,.9)'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(0, 0, 21, 3.7, 4.5); ctx.stroke();
+  }
   ctx.restore();
 }
 function drawPow(p) {
-  const cols = { triple: PINK, rapid: '#f5b72b', bubble: SKY_D, slow: '#2fbf9c' };
+  const cols = { triple: PINK, rapid: '#f5b72b', bubble: SKY_D, slow: '#2fbf9c', super: '#e8a100' };
   ctx.save(); ctx.translate(p.x, p.y + Math.sin(p.t) * 2);
   ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.beginPath(); ctx.arc(0, 0, 17, 0, TAU); ctx.fill();
   ell(0, 0, 13, 13, cols[p.type]); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 13, 0, TAU); ctx.stroke();
@@ -512,6 +533,7 @@ function drawPow(p) {
   if (p.type === 'triple') { ctx.beginPath(); for (const x of [-6, 0, 6]) { ctx.moveTo(x * .3, 6); ctx.lineTo(x, -6); } ctx.stroke(); }
   else if (p.type === 'rapid') { ctx.beginPath(); ctx.moveTo(2, -8); ctx.lineTo(-4, 1); ctx.lineTo(0, 1); ctx.lineTo(-2, 8); ctx.lineTo(4, -2); ctx.lineTo(0, -2); ctx.closePath(); ctx.fill(); }
   else if (p.type === 'bubble') { ctx.beginPath(); ctx.arc(0, 0, 6, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.arc(0, 0, 3.2, 3.7, 4.6); ctx.stroke(); }
+  else if (p.type === 'super') { ctx.beginPath(); ctx.arc(0, 0, 8.5, 0, TAU); ctx.stroke(); star(0, .5, 5, 0); }
   else { ctx.beginPath(); ctx.arc(0, 0, 6.5, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, -4); ctx.lineTo(0, 0); ctx.lineTo(3, 2); ctx.stroke(); }
   ctx.restore();
 }
@@ -552,7 +574,7 @@ function draw() {
   for (const b of pB) { ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(Math.atan2(b.vx, -b.vy)); ell(0, 0, 3, 8.5, BUTTER); ell(0, 0, 1.4, 5.5, '#fff'); ctx.restore(); }
   for (const b of eB) { ell(b.x - b.vx * .03, b.y - b.vy * .03, b.r * .7, b.r * 1.1, 'rgba(255,255,255,.25)'); ell(b.x, b.y, b.r, b.r, b.col); ell(b.x - 1, b.y - 1, b.r * .5, b.r * .5, '#fff3fb'); }
   for (const p of pows) drawPow(p);
-  if (S.state !== 'over' || S.lives > 0) { drawPlayer(); drawBubble(); }
+  if (S.state !== 'over' || S.lives > 0) { drawPlayer(); drawShield(); }
   for (const p of parts) { ctx.globalAlpha = clamp(p.life * 1.6, 0, 1); ctx.fillStyle = p.col; if (p.star) star(p.x, p.y, p.r * 1.4, p.rot); else { ctx.beginPath(); ctx.arc(p.x, p.y, p.r * .8, 0, TAU); ctx.fill(); } }
   ctx.globalAlpha = 1;
   ctx.font = `15px ${FONT}`; ctx.textAlign = 'center'; ctx.lineJoin = 'round';
@@ -568,22 +590,21 @@ function draw() {
 
 /* ---------- HUD, layout, input ---------- */
 const el = { score: $('score'), best: $('best'), wave: $('wave'), lives: $('livesN'), menuBest: $('menuBest'),
-  chips: { triple: $('chipTriple'), rapid: $('chipRapid'), slow: $('chipSlow'), bubble: $('chipBubble') } };
-const lastChip = { triple: -1, rapid: -1, slow: -1, bubble: -1 };
+  chips: { triple: $('chipTriple'), rapid: $('chipRapid'), slow: $('chipSlow'), bubble: $('chipBubble'), super: $('chipSuper') } };
+const lastChip = { triple: -1, rapid: -1, slow: -1, bubble: -1, super: -1 };
+const FX_MAX = { triple: 10, rapid: 10, slow: 6, bubble: BUBBLE_T, super: SUPER_T };
 function syncHud() {
   if (S.hudDirty) {
     S.hudDirty = false;
     el.score.textContent = S.score; el.best.textContent = Math.max(S.best, S.score);
     el.wave.textContent = Math.max(S.wave, 1); el.lives.textContent = S.lives;
   }
-  for (const k of ['triple', 'rapid', 'slow']) {
+  for (const k of ['triple', 'rapid', 'slow', 'bubble', 'super']) {
     const v = S.fx[k], q = Math.ceil(v * 10);
     if (q === lastChip[k]) continue; lastChip[k] = q;
     el.chips[k].hidden = v <= 0;
-    if (v > 0) el.chips[k].lastElementChild.style.transform = `scaleX(${v / (k === 'slow' ? 6 : 10)})`;
+    if (v > 0) el.chips[k].lastElementChild.style.transform = `scaleX(${v / FX_MAX[k]})`;
   }
-  const bq = P && P.bubble ? 1 : 0;
-  if (bq !== lastChip.bubble) { lastChip.bubble = bq; el.chips.bubble.hidden = !bq; }
 }
 
 function applyMode(m) {

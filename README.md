@@ -8,7 +8,7 @@ Boop the blobs, dodge the star-drops, grab power-ups and take down a boss every 
 
 - Portrait and landscape layouts, with on-screen thumb pads (slide across the arrows to steer, hold the star to fire)
 - Keyboard controls on desktop: arrow keys or A / D, Space to fire, P to pause, M to mute
-- Crumbling shields, a mystery UFO, four power-ups (triple shot, rapid fire, bubble shield, slow-mo) and boss waves
+- Crumbling shields, a mystery UFO, five power-ups (triple shot, rapid fire, bubble shield, slow-mo, and a rare Super shield with 3x the size and 3x the duration of the bubble) and boss waves
 - Easy, Normal and Hard modes, with a saved best score for each
 - Synthesized sound and music (no audio files), plus vibration on supported phones
 - Installable, with an app icon, and fully playable offline
