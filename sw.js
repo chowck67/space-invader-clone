@@ -2,13 +2,13 @@
  * Same-origin files: stale-while-revalidate, so the game opens instantly offline and picks up updates on the next launch.
  * Google Fonts: cached after the first online visit so the cartoon fonts also work offline.
  * Bump VERSION when you want to drop every old cached file. */
-const VERSION = 'v6';
+const VERSION = 'v7';
 const SHELL = `orange-invader-shell-${VERSION}`;
 const FONTS = 'orange-invader-fonts';
 const ASSETS = [
   './', 'index.html', 'css/style.css', 'js/game.js', 'js/pwa.js', 'manifest.webmanifest',
-  'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-192.png',
-  'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png', 'icons/favicon-32.png'
+  'icons/icon.svg?v=2', 'icons/icon-192.png?v=2', 'icons/icon-512.png?v=2', 'icons/icon-maskable-192.png?v=2',
+  'icons/icon-maskable-512.png?v=2', 'icons/apple-touch-icon.png?v=2', 'icons/favicon-32.png?v=2'
 ];
 
 self.addEventListener('install', e => {
