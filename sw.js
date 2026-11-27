@@ -2,7 +2,7 @@
  * Same-origin files: stale-while-revalidate, so the game opens instantly offline and picks up updates on the next launch.
  * Google Fonts: cached after the first online visit so the cartoon fonts also work offline.
  * Bump VERSION when you want to drop every old cached file. */
-const VERSION = 'v3';
+const VERSION = 'v4';
 const SHELL = `pip-patrol-shell-${VERSION}`;
 const FONTS = 'pip-patrol-fonts';
 const ASSETS = [

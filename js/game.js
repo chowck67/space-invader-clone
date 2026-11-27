@@ -10,6 +10,9 @@ const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const PINK = '#ff7eb6', PINK_D = '#e0559a', MINT = '#6ee7c8', MINT_D = '#38c0a2', BUTTER = '#ffd96b', BUTTER_D = '#f0b43c',
       SKY = '#7cc4ff', SKY_D = '#4aa3e8', LAV = '#b69cff', LAV_D = '#8b6fe0', INK = '#2b1f5e',
       ORG1 = '#ff9a3c', ORG1_D = '#e0701a', ORG2 = '#ff7a1a', ORG2_D = '#d4560a', ORG3 = '#ffb347', ORG3_D = '#e08f1d', BROW = '#4a1d08';
+const ROW_COL = ['#ffc468', '#ffa033', '#ff8000', '#e86100', '#b84a08'];
+const darken = (hex, f) => '#' + [1, 3, 5].map(i => Math.round(parseInt(hex.slice(i, i + 2), 16) * f).toString(16).padStart(2, '0')).join('');
+const ROW_DARK = ROW_COL.map(c => darken(c, .78));
 const FONT = `"Bagel Fat One","Arial Rounded MT Bold","Trebuchet MS",sans-serif`;
 
 /* storage */
@@ -285,8 +288,8 @@ function collect(p) {
 }
 function killAlien(a) {
   a.alive = false; form.alive--; addScore(a.pts);
-  const col = a.kind === 0 ? ORG1 : a.kind === 1 ? ORG2 : ORG3;
-  burst(ax(a), ay(a), 11, [col, ORG1_D, '#fff', BUTTER]); Snd.pop(); vib(10);
+  const col = ROW_COL[a.r];
+  burst(ax(a), ay(a), 11, [col, ROW_DARK[a.r], '#fff', BUTTER]); Snd.pop(); vib(10);
   if (Math.random() < D.drop) spawnPow(ax(a), ay(a));
   if (form.alive <= 0) waveClear();
 }
@@ -444,14 +447,15 @@ function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x 
 
 /* Three original orange critters, each with its own ugly face: Grumpus (top row), Squint (middle) and Goober (bottom). */
 function brow(x1, y1, x2, y2, w) { ctx.strokeStyle = BROW; ctx.lineWidth = w || 2.2; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); }
-function drawAlien(kind, x, y, fr, dx) {
+function drawAlien(kind, x, y, fr, dx, row) {
+  const body = ROW_COL[row], dark = ROW_DARK[row];
   ctx.save(); ctx.translate(x, y);
   const blotch = 'rgba(190,50,0,.3)';
   if (kind === 0) {                                   // Grumpus: spiky tufts, furious brows, snarling teeth
-    ctx.fillStyle = ORG1_D;
+    ctx.fillStyle = dark;
     for (const t of [-1, 0, 1]) { const w = fr ? 1.5 : -1; ctx.beginPath(); ctx.moveTo(t * 6 - 3, -9); ctx.lineTo(t * 6 + w * t, -19 + (t === 0 ? -2 : 0)); ctx.lineTo(t * 6 + 3, -9); ctx.closePath(); ctx.fill(); }
-    ell(-6, 11.5 + (fr ? 0 : 1.4), 4.2, 2.6, ORG1_D); ell(6, 11.5 + (fr ? 1.4 : 0), 4.2, 2.6, ORG1_D);
-    ell(0, 0, 13, 11.5, ORG1); ell(0, 5, 9, 4.5, 'rgba(255,255,255,.22)');
+    ell(-6, 11.5 + (fr ? 0 : 1.4), 4.2, 2.6, dark); ell(6, 11.5 + (fr ? 1.4 : 0), 4.2, 2.6, dark);
+    ell(0, 0, 13, 11.5, body); ell(0, 5, 9, 4.5, 'rgba(255,255,255,.22)');
     ell(-9.5, 3, 3, 2.2, blotch); ell(9.5, 3, 3, 2.2, blotch);
     for (const t of [-1, 1]) { ell(t * 5, -2, 3.3, 2.9, '#fff'); ell(t * 5 + dx, -1.6, 1.7, 1.8, INK); }
     brow(-10, -8.5, -2, -5); brow(10, -8.5, 2, -5);
@@ -460,18 +464,18 @@ function drawAlien(kind, x, y, fr, dx) {
     for (const tx of [-3.4, -.6, 2.2]) { ctx.beginPath(); ctx.moveTo(tx, 3.2); ctx.lineTo(tx + 2.4, 3.2); ctx.lineTo(tx + 1.2, 5.6); ctx.closePath(); ctx.fill(); }
   } else if (kind === 1) {                            // Squint: slit eyes, puffed cheeks, jagged scowl
     const ax2 = fr ? -4 : 4;
-    ctx.strokeStyle = ORG2_D; ctx.lineWidth = 1.8; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(0, -11); ctx.lineTo(ax2, -18); ctx.stroke();
+    ctx.strokeStyle = dark; ctx.lineWidth = 1.8; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(0, -11); ctx.lineTo(ax2, -18); ctx.stroke();
     ell(ax2, -19, 2.7, 2.7, BUTTER);
-    ell(-14, 3 + (fr ? -2 : 2), 3.2, 2.2, ORG2_D); ell(14, 3 + (fr ? 2 : -2), 3.2, 2.2, ORG2_D);
-    ell(-6, 12, 3.4, 2.4, ORG2_D); ell(6, 12, 3.4, 2.4, ORG2_D);
-    ell(0, 0, 13.5, 12, ORG2); ell(0, 6, 9, 4.5, 'rgba(255,255,255,.2)');
+    ell(-14, 3 + (fr ? -2 : 2), 3.2, 2.2, dark); ell(14, 3 + (fr ? 2 : -2), 3.2, 2.2, dark);
+    ell(-6, 12, 3.4, 2.4, dark); ell(6, 12, 3.4, 2.4, dark);
+    ell(0, 0, 13.5, 12, body); ell(0, 6, 9, 4.5, 'rgba(255,255,255,.2)');
     ell(-10, 4, 3.4, 2.8, blotch); ell(10, 4, 3.4, 2.8, blotch);
     for (const t of [-1, 1]) { ell(t * 5.5, -2, 4.2, 2.1, '#fff'); ell(t * 5.5 + dx * .9, -1.8, 1.5, 1.5, INK); brow(t * 10.5, -5.2, t * 1.5, -3.6, 2.4); }
     ctx.strokeStyle = INK; ctx.lineWidth = 1.8; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(-7, 8.5);
     for (let i = 1; i <= 4; i++) ctx.lineTo(-7 + i * 3.5, i % 2 ? 5.5 : 8.5);
     ctx.stroke();
   } else {                                            // Goober: crossed eyes, bucktooth, tongue and drool
-    ctx.fillStyle = ORG3; ctx.beginPath(); ctx.arc(0, -2, 13, Math.PI, 0); ctx.lineTo(13, 9);
+    ctx.fillStyle = body; ctx.beginPath(); ctx.arc(0, -2, 13, Math.PI, 0); ctx.lineTo(13, 9);
     for (let i = 0; i < 4; i++) { const x2 = 13 - (i + 1) * 6.5, x1 = 13 - (i + .5) * 6.5; ctx.quadraticCurveTo(x1, 10 + ((i + fr) % 2 ? 5 : -2), x2, 9); }
     ctx.closePath(); ctx.fill();
     ell(-5, -9, 4, 2.4, 'rgba(255,255,255,.45)');
@@ -592,7 +596,7 @@ function draw() {
   if (form && aliens.length) for (const a of aliens) {
     if (!a.alive) continue;
     const x = ax(a), y = ay(a) + (S.state === 'menu' ? Math.sin(t * 2 + a.c * .7) * 2 : 0);
-    drawAlien(a.kind, x, y, fr, clamp((P.x - x) / 160, -1, 1) * 1.5);
+    drawAlien(a.kind, x, y, fr, clamp((P.x - x) / 160, -1, 1) * 1.5, a.r);
   }
   if (ufo) drawUfo(ufo, t);
   if (boss) drawBoss(boss);
