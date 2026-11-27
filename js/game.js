@@ -277,7 +277,7 @@ function shieldHit() {
   if (sup) { if (--P.superHits <= 0) { S.fx.super = 0; pop(P.x, P.y - 40, 'Shield gone', BUTTER); } }
   else S.fx.bubble = 0;
 }
-const POW_TYPES = ['triple', 'triple', 'triple', 'rapid', 'rapid', 'rapid', 'bubble', 'bubble', 'slow', 'slow', 'super'];
+const POW_TYPES = ['triple', 'triple', 'triple', 'rapid', 'rapid', 'rapid', 'bubble', 'bubble', 'slow', 'slow', 'super', 'super', 'super'];
 function spawnPow(x, y) { pows.push({ x, y, type: POW_TYPES[Math.floor(Math.random() * POW_TYPES.length)], t: rand(0, TAU) }); }
 function collect(p) {
   const names = { triple: 'Triple shot!', rapid: 'Rapid fire!', bubble: 'Bubble shield!', slow: 'Slow-mo!', super: 'SUPER shield!' };
@@ -551,6 +551,14 @@ function drawShield() {
     ctx.strokeStyle = 'rgba(200,235,255,.9)'; ctx.lineWidth = 2; ctx.stroke();
     ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(0, 0, 21, 3.7, 4.5); ctx.stroke();
   }
+  ctx.restore();
+}
+function drawUfo(u, t) {
+  ctx.save(); ctx.translate(u.x, u.y + Math.sin(t * 6) * 1.5);
+  ell(0, -5, 9, 8, 'rgba(200,245,255,.9)'); ell(0, -4, 5, 5, PINK); ell(-1.7, -5, .9, 1, INK); ell(1.7, -5, .9, 1, INK);
+  ell(0, 7, 10, 3.5, LAV_D); ell(0, 2, 18, 7, LAV);
+  const cols = [BUTTER, PINK, MINT, SKY, BUTTER];
+  for (let i = 0; i < 5; i++) ell(-12 + i * 6, 2.5, 1.7, 1.7, Math.floor(t * 8 + i) % 2 ? cols[i] : '#fff');
   ctx.restore();
 }
 function drawPow(p) {
