@@ -1,10 +1,10 @@
-/* Pip Patrol service worker.
+/* Orange Invader service worker.
  * Same-origin files: stale-while-revalidate, so the game opens instantly offline and picks up updates on the next launch.
  * Google Fonts: cached after the first online visit so the cartoon fonts also work offline.
  * Bump VERSION when you want to drop every old cached file. */
-const VERSION = 'v4';
-const SHELL = `pip-patrol-shell-${VERSION}`;
-const FONTS = 'pip-patrol-fonts';
+const VERSION = 'v5';
+const SHELL = `orange-invader-shell-${VERSION}`;
+const FONTS = 'orange-invader-fonts';
 const ASSETS = [
   './', 'index.html', 'css/style.css', 'js/game.js', 'js/pwa.js', 'manifest.webmanifest',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-192.png',
@@ -17,7 +17,7 @@ self.addEventListener('install', e => {
 
 self.addEventListener('activate', e => {
   e.waitUntil((async () => {
-    for (const k of await caches.keys()) if (k.startsWith('pip-patrol-shell-') && k !== SHELL) await caches.delete(k);
+    for (const k of await caches.keys()) if (k !== SHELL && k !== FONTS) await caches.delete(k);   // also clears the old Pip Patrol caches
     await self.clients.claim();
   })());
 });

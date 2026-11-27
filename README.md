@@ -1,4 +1,4 @@
-# Pip Patrol
+# Orange Invader
 
 A cute, touch-friendly Space Invaders-style shooter that installs on your phone as a progressive web app (PWA) and plays offline.
 

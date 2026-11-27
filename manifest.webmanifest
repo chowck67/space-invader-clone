@@ -1,7 +1,7 @@
 {
   "id": "./",
-  "name": "Pip Patrol",
-  "short_name": "Pip Patrol",
+  "name": "Orange Invader",
+  "short_name": "Orange Invader",
   "description": "A cute, touch-friendly space shooter. Boop the blobs and keep the sparkle sky safe.",
   "start_url": "./",
   "scope": "./",

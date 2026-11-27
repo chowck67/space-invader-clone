@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the Pip Patrol app icons.
+"""Generate the Orange Invader app icons.
 
 Writes icons/icon.svg and icons/icon-maskable.svg, then renders the PNG sizes
 with headless Chromium via Playwright (optional: pass --svg-only to skip PNGs).
