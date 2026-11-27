@@ -8,7 +8,8 @@ const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /* palette */
 const PINK = '#ff7eb6', PINK_D = '#e0559a', MINT = '#6ee7c8', MINT_D = '#38c0a2', BUTTER = '#ffd96b', BUTTER_D = '#f0b43c',
-      SKY = '#7cc4ff', SKY_D = '#4aa3e8', LAV = '#b69cff', LAV_D = '#8b6fe0', INK = '#2b1f5e';
+      SKY = '#7cc4ff', SKY_D = '#4aa3e8', LAV = '#b69cff', LAV_D = '#8b6fe0', INK = '#2b1f5e',
+      ORG1 = '#ff9a3c', ORG1_D = '#e0701a', ORG2 = '#ff7a1a', ORG2_D = '#d4560a', ORG3 = '#ffb347', ORG3_D = '#e08f1d', BROW = '#4a1d08';
 const FONT = `"Bagel Fat One","Arial Rounded MT Bold","Trebuchet MS",sans-serif`;
 
 /* storage */
@@ -284,8 +285,8 @@ function collect(p) {
 }
 function killAlien(a) {
   a.alive = false; form.alive--; addScore(a.pts);
-  const col = a.kind === 0 ? PINK : a.kind === 1 ? MINT : BUTTER;
-  burst(ax(a), ay(a), 11, [col, '#fff', BUTTER]); Snd.pop(); vib(10);
+  const col = a.kind === 0 ? ORG1 : a.kind === 1 ? ORG2 : ORG3;
+  burst(ax(a), ay(a), 11, [col, ORG1_D, '#fff', BUTTER]); Snd.pop(); vib(10);
   if (Math.random() < D.drop) spawnPow(ax(a), ay(a));
   if (form.alive <= 0) waveClear();
 }
@@ -441,50 +442,74 @@ function star(x, y, r, rot) {
 }
 function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
 
+/* Three original orange critters, each with its own ugly face: Grumpus (top row), Squint (middle) and Goober (bottom). */
+function brow(x1, y1, x2, y2, w) { ctx.strokeStyle = BROW; ctx.lineWidth = w || 2.2; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); }
 function drawAlien(kind, x, y, fr, dx) {
   ctx.save(); ctx.translate(x, y);
-  const cheek = 'rgba(255,70,130,.4)';
-  if (kind === 0) {
-    for (const s of [-1, 1]) { ctx.save(); ctx.translate(s * 7, -9); ctx.rotate(s * (.22 + (fr ? .22 : -.04))); ell(0, -8, 3.8, 9, PINK_D); ell(0, -8, 2, 6.5, '#ffc7df'); ctx.restore(); }
-    ell(-6, 11.5 + (fr ? 0 : 1.4), 4.2, 2.6, PINK_D); ell(6, 11.5 + (fr ? 1.4 : 0), 4.2, 2.6, PINK_D);
-    ell(0, 0, 13, 11.5, PINK); ell(0, 5, 9, 5, 'rgba(255,255,255,.25)');
-    eyes(0, -2, 5.2, 3.3, dx); ell(-9, 3, 2.4, 1.6, cheek); ell(9, 3, 2.4, 1.6, cheek); smile(0, 3, 2.6);
-  } else if (kind === 1) {
+  const blotch = 'rgba(190,50,0,.3)';
+  if (kind === 0) {                                   // Grumpus: spiky tufts, furious brows, snarling teeth
+    ctx.fillStyle = ORG1_D;
+    for (const t of [-1, 0, 1]) { const w = fr ? 1.5 : -1; ctx.beginPath(); ctx.moveTo(t * 6 - 3, -9); ctx.lineTo(t * 6 + w * t, -19 + (t === 0 ? -2 : 0)); ctx.lineTo(t * 6 + 3, -9); ctx.closePath(); ctx.fill(); }
+    ell(-6, 11.5 + (fr ? 0 : 1.4), 4.2, 2.6, ORG1_D); ell(6, 11.5 + (fr ? 1.4 : 0), 4.2, 2.6, ORG1_D);
+    ell(0, 0, 13, 11.5, ORG1); ell(0, 5, 9, 4.5, 'rgba(255,255,255,.22)');
+    ell(-9.5, 3, 3, 2.2, blotch); ell(9.5, 3, 3, 2.2, blotch);
+    for (const t of [-1, 1]) { ell(t * 5, -2, 3.3, 2.9, '#fff'); ell(t * 5 + dx, -1.6, 1.7, 1.8, INK); }
+    brow(-10, -8.5, -2, -5); brow(10, -8.5, 2, -5);
+    ell(0, 6, 5.8, 3.4, INK);
+    ctx.fillStyle = '#fff';
+    for (const tx of [-3.4, -.6, 2.2]) { ctx.beginPath(); ctx.moveTo(tx, 3.2); ctx.lineTo(tx + 2.4, 3.2); ctx.lineTo(tx + 1.2, 5.6); ctx.closePath(); ctx.fill(); }
+  } else if (kind === 1) {                            // Squint: slit eyes, puffed cheeks, jagged scowl
     const ax2 = fr ? -4 : 4;
-    ctx.strokeStyle = MINT_D; ctx.lineWidth = 1.8; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(0, -11); ctx.lineTo(ax2, -18); ctx.stroke();
+    ctx.strokeStyle = ORG2_D; ctx.lineWidth = 1.8; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(0, -11); ctx.lineTo(ax2, -18); ctx.stroke();
     ell(ax2, -19, 2.7, 2.7, BUTTER);
-    ell(-14, 3 + (fr ? -2 : 2), 3.2, 2.2, MINT_D); ell(14, 3 + (fr ? 2 : -2), 3.2, 2.2, MINT_D);
-    ell(-6, 12, 3.4, 2.4, MINT_D); ell(6, 12, 3.4, 2.4, MINT_D);
-    ell(0, 0, 13.5, 12, MINT); ell(0, 6, 9, 4.5, 'rgba(255,255,255,.25)');
-    ell(0, -2, 6.4, 6.8, '#fff'); ell(dx * 1.2, -1.6, 3.2, 3.4, INK); ell(dx * 1.2 - 1, -2.8, 1, 1, '#fff');
-    ell(-10, 4, 2.2, 1.5, cheek); ell(10, 4, 2.2, 1.5, cheek); smile(0, 4.5, 4.2);
-  } else {
-    ctx.fillStyle = BUTTER; ctx.beginPath(); ctx.arc(0, -2, 13, Math.PI, 0); ctx.lineTo(13, 9);
+    ell(-14, 3 + (fr ? -2 : 2), 3.2, 2.2, ORG2_D); ell(14, 3 + (fr ? 2 : -2), 3.2, 2.2, ORG2_D);
+    ell(-6, 12, 3.4, 2.4, ORG2_D); ell(6, 12, 3.4, 2.4, ORG2_D);
+    ell(0, 0, 13.5, 12, ORG2); ell(0, 6, 9, 4.5, 'rgba(255,255,255,.2)');
+    ell(-10, 4, 3.4, 2.8, blotch); ell(10, 4, 3.4, 2.8, blotch);
+    for (const t of [-1, 1]) { ell(t * 5.5, -2, 4.2, 2.1, '#fff'); ell(t * 5.5 + dx * .9, -1.8, 1.5, 1.5, INK); brow(t * 10.5, -5.2, t * 1.5, -3.6, 2.4); }
+    ctx.strokeStyle = INK; ctx.lineWidth = 1.8; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(-7, 8.5);
+    for (let i = 1; i <= 4; i++) ctx.lineTo(-7 + i * 3.5, i % 2 ? 5.5 : 8.5);
+    ctx.stroke();
+  } else {                                            // Goober: crossed eyes, bucktooth, tongue and drool
+    ctx.fillStyle = ORG3; ctx.beginPath(); ctx.arc(0, -2, 13, Math.PI, 0); ctx.lineTo(13, 9);
     for (let i = 0; i < 4; i++) { const x2 = 13 - (i + 1) * 6.5, x1 = 13 - (i + .5) * 6.5; ctx.quadraticCurveTo(x1, 10 + ((i + fr) % 2 ? 5 : -2), x2, 9); }
     ctx.closePath(); ctx.fill();
     ell(-5, -9, 4, 2.4, 'rgba(255,255,255,.45)');
-    eyes(0, -2, 5, 3, dx); ell(0, 4, 1.8, 2.2, INK); ell(-9, 2.5, 2.2, 1.5, cheek); ell(9, 2.5, 2.2, 1.5, cheek);
+    ell(-9, 2.5, 2.6, 1.9, blotch); ell(9, 2.5, 2.6, 1.9, blotch);
+    for (const t of [-1, 1]) { ell(t * 4.4, -2, 3.5, 3.5, '#fff'); ell(t * 4.4 - t * 1.8, -1.6, 1.5, 1.6, INK); }
+    brow(-9, -8, -2, -6.6, 1.8); brow(2, -7.6, 9, -5.8, 1.8);
+    ell(0, 4.2, 3.4, 2.2, INK);
+    ctx.fillStyle = '#fff'; ctx.fillRect(-1.7, 2.8, 3.4, 3);
+    ell(2.2, 6.8 + (fr ? .6 : 0), 1.9, 2.8, PINK); ell(-4.2, 8.4 + (fr ? 1 : 0), 1, 1.6, '#bfe6ff');
   }
   ctx.restore();
 }
-function drawBoss(b) {
+function drawBoss(b) {                               // the boss: a big orange grump in a crown
   ctx.save(); ctx.translate(b.x, b.y + Math.sin(b.t * 3) * 3);
-  ell(-24, 41, 13, 7, LAV_D); ell(24, 41, 13, 7, LAV_D);
+  ell(-24, 41, 13, 7, ORG2_D); ell(24, 41, 13, 7, ORG2_D);
   const wv = Math.sin(b.t * 4) * .25;
-  ctx.save(); ctx.translate(-49, 6); ctx.rotate(-.5 + wv); ell(0, 0, 8, 16, LAV_D); ctx.restore();
-  ctx.save(); ctx.translate(49, 6); ctx.rotate(.5 - wv); ell(0, 0, 8, 16, LAV_D); ctx.restore();
+  ctx.save(); ctx.translate(-49, 6); ctx.rotate(-.5 + wv); ell(0, 0, 8, 16, ORG2_D); ctx.restore();
+  ctx.save(); ctx.translate(49, 6); ctx.rotate(.5 - wv); ell(0, 0, 8, 16, ORG2_D); ctx.restore();
   ctx.fillStyle = BUTTER;
   for (const x of [-22, 0, 22]) { const tip = x === 0 ? -56 : -52; ctx.beginPath(); ctx.moveTo(x - 9, -33); ctx.lineTo(x, tip); ctx.lineTo(x + 9, -33); ctx.closePath(); ctx.fill(); ell(x, tip, 3, 3, PINK); }
-  ell(0, 0, 50, 42, LAV); ell(0, 15, 32, 22, '#d9cbff');
+  ell(0, 0, 50, 42, '#ff8a2a'); ell(0, 15, 32, 22, '#ffc27a');
+  ell(-34, 10, 9, 6, 'rgba(190,50,0,.3)'); ell(34, 10, 9, 6, 'rgba(190,50,0,.3)');
   const lx = clamp((P.x - b.x) / 120, -1, 1) * 3;
   for (const s of [-1, 1]) {
-    ell(s * 18, -8, 12, 13, '#fff');
-    if (b.blink > 0) { ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(s * 18 - 9, -7); ctx.lineTo(s * 18 + 9, -7); ctx.stroke(); }
-    else { ell(s * 18 + lx, -7, 6, 6.6, INK); ell(s * 18 + lx - 2, -9.5, 2, 2, '#fff'); }
-    ell(s * 33, 8, 6, 4, 'rgba(255,70,130,.45)');
+    ell(s * 18, -6, 11, 9, '#fff');
+    if (b.blink > 0) { ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(s * 18 - 9, -6); ctx.lineTo(s * 18 + 9, -6); ctx.stroke(); }
+    else { ell(s * 18 + lx, -5, 5.2, 5.4, INK); ell(s * 18 + lx - 1.8, -7, 1.8, 1.8, '#fff'); }
+    brow(s * 31, -25, s * 7, -13, 5.5);
   }
-  if (b.open > 0) { ell(0, 18, 12, 4 + Math.min(b.open / .35, 1) * 8, INK); ell(0, 24, 7, 3.5, PINK); }
-  else smile(0, 12, 9, 2.4);
+  if (b.open > 0) {
+    const h = 4 + Math.min(b.open / .35, 1) * 9;
+    ell(0, 19, 15, h, INK); ctx.fillStyle = '#fff';
+    for (const tx of [-9, -3, 3]) { ctx.beginPath(); ctx.moveTo(tx, 19 - h + 1); ctx.lineTo(tx + 6, 19 - h + 1); ctx.lineTo(tx + 3, 19 - h + 6); ctx.closePath(); ctx.fill(); }
+  } else {
+    ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-16, 22);
+    for (let i = 1; i <= 8; i++) ctx.lineTo(-16 + i * 4, i % 2 ? 15 : 22);
+    ctx.stroke();
+  }
   if (b.flash > 0) { ctx.globalAlpha = .65; ell(0, 0, 50, 42, '#fff'); ctx.globalAlpha = 1; }
   ctx.restore();
 }
