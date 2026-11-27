@@ -96,7 +96,7 @@ const baseOy = () => mode === 'port' ? 68 : 64;
 const UFO_Y = 26;
 
 const S = { state: 'menu', score: 0, lives: 3, wave: 0, best: 0, clock: 0, shake: 0, banner: 0, clearT: 0, ufoT: 12, fireT: 1.2, ufoSnd: 0,
-            isBoss: false, newBest: false, nextUp: 2500, fx: { triple: 0, rapid: 0, slow: 0, bubble: 0, super: 0 }, hudDirty: true };
+            isBoss: false, newBest: false, nextUp: 2500, fx: { triple: 0, rapid: 0, slow: 0, bubble: 0, super: 0, ghost: 0 }, hudDirty: true };
 const input = { tl: false, tr: false, kl: false, kr: false, tf: false, kf: false };
 let P, form, aliens = [], shields = [], pB = [], eB = [], parts = [], pops = [], pows = [], ufo = null, boss = null;
 
@@ -196,7 +196,7 @@ function startGame() {
   D = DIFFS[settings.diff] || DIFFS.normal;
   Snd.init(); Snd.setEnabled(settings.sound);
   S.score = 0; S.lives = D.lives; S.wave = 0; S.nextUp = 2500; S.newBest = false;
-  S.fx.triple = S.fx.rapid = S.fx.slow = S.fx.bubble = S.fx.super = 0;
+  S.fx.triple = S.fx.rapid = S.fx.slow = S.fx.bubble = S.fx.super = S.fx.ghost = 0;
   S.best = store.get(bestKey(), 0);
   pB = []; eB = []; parts = []; pops = []; pows = []; ufo = null; boss = null;
   newPlayer();
@@ -222,7 +222,7 @@ function nextWave() {
   Snd.wave(); hud();
 }
 function waveClear() {
-  S.clearT = 1.6; eB = [];
+  S.clearT = 1.6; eB.length = 0;
   const bonus = 100 * S.wave; addScore(bonus); pop(W / 2, H * .45, 'Wave clear! +' + bonus, BUTTER);
   Snd.wave();
 }
@@ -255,18 +255,19 @@ function shoot() {
   Snd.shoot(); vib(6);
 }
 function hitPlayer() {
-  if (P.inv > 0) return;
+  if (P.inv > 0 || S.fx.ghost > 0) return;
   if (activeShield()) { shieldHit(); P.inv = .9; return; }
-  S.lives--; P.inv = 2.2; S.shake = .35; eB = [];
+  S.lives--; P.inv = 2.2; S.shake = .35; eB.length = 0;
   burst(P.x, P.y, 24, [PINK, BUTTER, '#fff']); Snd.hit(); vib([60, 40, 80]); hud();
   if (S.lives <= 0) gameOver();
 }
 function invade() {
-  S.lives--; eB = []; form.oy = Math.max(baseOy(), form.oy - 90); P.inv = 2; S.shake = .4;
+  S.lives--; eB.length = 0; form.oy = Math.max(baseOy(), form.oy - 90); P.inv = 2; S.shake = .4;
   burst(P.x, P.y, 24, [PINK, BUTTER, '#fff']); Snd.hit(); vib([60, 40, 80]); hud();
   if (S.lives <= 0) gameOver();
 }
 /* Shields: the bubble lasts 10s and pops on one hit. The super shield has 3x the radius, lasts 3x as long (30s) and takes 3 hits. */
+const GHOST_T = 5;                                  // invisibility: enemies cannot hit or reach the ship for 5s
 const BUBBLE_R = 28, BUBBLE_T = 10, SUPER_R = BUBBLE_R * 3, SUPER_T = BUBBLE_T * 3, SUPER_HITS = 3;
 const activeShield = () => S.fx.super > 0 ? 'super' : S.fx.bubble > 0 ? 'bubble' : null;
 const shieldRadius = () => activeShield() === 'super' ? SUPER_R : BUBBLE_R;
@@ -277,11 +278,11 @@ function shieldHit() {
   if (sup) { if (--P.superHits <= 0) { S.fx.super = 0; pop(P.x, P.y - 40, 'Shield gone', BUTTER); } }
   else S.fx.bubble = 0;
 }
-const POW_TYPES = ['triple', 'triple', 'triple', 'rapid', 'rapid', 'rapid', 'bubble', 'bubble', 'slow', 'slow', 'super', 'super', 'super'];
+const POW_TYPES = ['triple', 'triple', 'triple', 'rapid', 'rapid', 'rapid', 'bubble', 'bubble', 'slow', 'slow', 'super', 'super', 'super', 'ghost', 'ghost'];
 function spawnPow(x, y) { pows.push({ x, y, type: POW_TYPES[Math.floor(Math.random() * POW_TYPES.length)], t: rand(0, TAU) }); }
 function collect(p) {
-  const names = { triple: 'Triple shot!', rapid: 'Rapid fire!', bubble: 'Bubble shield!', slow: 'Slow-mo!', super: 'SUPER shield!' };
-  const secs = { triple: 10, rapid: 10, slow: 6, bubble: BUBBLE_T, super: SUPER_T };
+  const names = { triple: 'Triple shot!', rapid: 'Rapid fire!', bubble: 'Bubble shield!', slow: 'Slow-mo!', super: 'SUPER shield!', ghost: 'Invisible!' };
+  const secs = { triple: 10, rapid: 10, slow: 6, bubble: BUBBLE_T, super: SUPER_T, ghost: GHOST_T };
   S.fx[p.type] = secs[p.type];
   if (p.type === 'super') P.superHits = SUPER_HITS;
   pop(P.x, P.y - 36, names[p.type], BUTTER); Snd.power(); vib(18); burst(p.x, p.y, 10, [BUTTER, '#fff'], { g: 0, max: 120 });
@@ -336,7 +337,7 @@ function updForm(dt, ts) {
   form.animT += dt * ts * (1.4 + mul);
   lowY = lowY + 0; // recomputed next frame after drop
   if (lowY + 14 > shieldTop()) for (const a of aliens) if (a.alive) crushShields(ax(a), ay(a), 15, 14);
-  if (lowY + 13 >= P.y - 18) invade();
+  if (lowY + 13 >= P.y - 18 && S.fx.ghost <= 0) invade();
 }
 function alienFire(dt, ts) {
   S.fireT -= dt * ts;
@@ -347,7 +348,7 @@ function alienFire(dt, ts) {
   for (let c = 0; c < form.cols; c++) for (let r = form.rows - 1; r >= 0; r--) { const a = aliens[r * form.cols + c]; if (a.alive) { cols.push(a); break; } }
   if (!cols.length) return;
   let pick;
-  if (Math.random() < .5) { pick = cols[0]; for (const a of cols) if (Math.abs(ax(a) - P.x) < Math.abs(ax(pick) - P.x)) pick = a; }
+  if (S.fx.ghost <= 0 && Math.random() < .5) { pick = cols[0]; for (const a of cols) if (Math.abs(ax(a) - P.x) < Math.abs(ax(pick) - P.x)) pick = a; }
   else pick = cols[Math.floor(Math.random() * cols.length)];
   eB.push({ x: ax(pick), y: ay(pick) + 12, vx: 0, vy: 110 + Math.min(S.wave, 10) * 8, col: PINK, r: 5 });
 }
@@ -376,18 +377,19 @@ function updBoss(dt, ts) {
   b.fireT -= dt * ts;
   if (b.fireT <= 0) {
     const v = 140 * (.9 + .1 * D.fire), mk = (a, s) => eB.push({ x: b.x, y: b.y + 36, vx: Math.sin(a) * s, vy: Math.cos(a) * s, col: '#d6bcff', r: 6 });
+    const aim = () => S.fx.ghost > 0 ? rand(-.5, .5) : Math.atan2(P.x - b.x, P.y - b.y);
     if (r > .6) { [-.4, 0, .4].forEach(a => mk(a, v)); b.fireT = 1.6 / D.fire; }
-    else if (r > .3) { [-.6, -.3, 0, .3, .6].forEach(a => mk(a, v)); mk(Math.atan2(P.x - b.x, P.y - b.y), v * 1.1); b.fireT = 1.5 / D.fire; }
+    else if (r > .3) { [-.6, -.3, 0, .3, .6].forEach(a => mk(a, v)); mk(aim(), v * 1.1); b.fireT = 1.5 / D.fire; }
     else {
       for (let i = 0; i < 9; i++) mk(-1.2 + i * .3 + (Math.floor(b.t) % 2 ? .15 : 0), v * .95);
-      mk(Math.atan2(P.x - b.x, P.y - b.y), v * 1.2); b.fireT = 1.15 / D.fire;
+      mk(aim(), v * 1.2); b.fireT = 1.15 / D.fire;
     }
     b.open = .35;
   }
 }
 function update(dt) {
   const ts = S.fx.slow > 0 ? .45 : 1;
-  for (const k of ['triple', 'rapid', 'slow', 'bubble', 'super']) if (S.fx[k] > 0) S.fx[k] = Math.max(0, S.fx[k] - dt);
+  for (const k of ['triple', 'rapid', 'slow', 'bubble', 'super', 'ghost']) if (S.fx[k] > 0) S.fx[k] = Math.max(0, S.fx[k] - dt);
   P.inv = Math.max(0, P.inv - dt);
   const dir = ((input.tl || input.kl) ? -1 : 0) + ((input.tr || input.kr) ? 1 : 0);
   P.x = clamp(P.x + dir * 250 * dt, 18, W - 18);
@@ -404,19 +406,23 @@ function update(dt) {
   if (S.state !== 'play') return;
 
   for (let i = pB.length - 1; i >= 0; i--) {
-    const b = pB[i]; b.x += b.vx * dt; b.y += b.vy * dt;
+    const b = pB[i]; if (!b) continue;
+    b.x += b.vx * dt; b.y += b.vy * dt;
     if (b.y < -14 || b.x < -10 || b.x > W + 10 || collidePB(b)) pB.splice(i, 1);
     if (S.state !== 'play') return;
   }
   for (let i = eB.length - 1; i >= 0; i--) {
-    const b = eB[i]; b.x += b.vx * dt * ts; b.y += b.vy * dt * ts;
+    const b = eB[i]; if (!b) continue;
+    b.x += b.vx * dt * ts; b.y += b.vy * dt * ts;
     if (b.y > H + 10 || b.x < -10 || b.x > W + 10) { eB.splice(i, 1); continue; }
     if (hitShield(b.x, b.y, b.r > 5 ? 2.1 : 1.7)) { eB.splice(i, 1); continue; }
-    if (activeShield() && Math.hypot(b.x - P.x, b.y - (P.y - 3)) < shieldRadius() + b.r) { eB.splice(i, 1); shieldHit(); continue; }
-    if (Math.abs(b.x - P.x) < 11 + b.r * .4 && b.y > P.y - 18 && b.y < P.y + 16) { eB.splice(i, 1); hitPlayer(); if (S.state !== 'play') return; }
+    const ghost = S.fx.ghost > 0;                       // bullets fly straight through an invisible ship, and spare the shield
+    if (!ghost && activeShield() && Math.hypot(b.x - P.x, b.y - (P.y - 3)) < shieldRadius() + b.r) { eB.splice(i, 1); shieldHit(); continue; }
+    if (!ghost && Math.abs(b.x - P.x) < 11 + b.r * .4 && b.y > P.y - 18 && b.y < P.y + 16) { eB.splice(i, 1); hitPlayer(); if (S.state !== 'play') return; }
   }
   for (let i = pows.length - 1; i >= 0; i--) {
-    const p = pows[i]; p.y += 70 * dt; p.t += dt * 4;
+    const p = pows[i]; if (!p) continue;
+    p.y += 70 * dt; p.t += dt * 4;
     if (Math.abs(p.x - P.x) < 24 && Math.abs(p.y - P.y) < 26) { collect(p); pows.splice(i, 1); }
     else if (p.y > H + 20) pows.splice(i, 1);
   }
@@ -520,6 +526,7 @@ function drawBoss(b) {                               // the boss: a big orange g
 function drawPlayer() {
   if (P.inv > 0 && Math.floor(P.inv * 14) % 2) return;
   ctx.save(); ctx.translate(P.x, P.y);
+  if (S.fx.ghost > 0) ctx.globalAlpha = (S.fx.ghost < 1.5 && Math.floor(S.clock * 10) % 2) ? .85 : .28;
   const fl = 6 + Math.random() * 5;
   ell(0, 17 + fl / 2, 5, fl, PINK); ell(0, 16 + fl / 3, 2.6, fl * .6, BUTTER);
   ctx.fillStyle = SKY_D;
@@ -562,7 +569,7 @@ function drawUfo(u, t) {
   ctx.restore();
 }
 function drawPow(p) {
-  const cols = { triple: PINK, rapid: '#f5b72b', bubble: SKY_D, slow: '#2fbf9c', super: '#e8a100' };
+  const cols = { triple: PINK, rapid: '#f5b72b', bubble: SKY_D, slow: '#2fbf9c', super: '#e8a100', ghost: '#8b6fe0' };
   ctx.save(); ctx.translate(p.x, p.y + Math.sin(p.t) * 2);
   ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.beginPath(); ctx.arc(0, 0, 17, 0, TAU); ctx.fill();
   ell(0, 0, 13, 13, cols[p.type]); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 13, 0, TAU); ctx.stroke();
@@ -570,6 +577,7 @@ function drawPow(p) {
   if (p.type === 'triple') { ctx.beginPath(); for (const x of [-6, 0, 6]) { ctx.moveTo(x * .3, 6); ctx.lineTo(x, -6); } ctx.stroke(); }
   else if (p.type === 'rapid') { ctx.beginPath(); ctx.moveTo(2, -8); ctx.lineTo(-4, 1); ctx.lineTo(0, 1); ctx.lineTo(-2, 8); ctx.lineTo(4, -2); ctx.lineTo(0, -2); ctx.closePath(); ctx.fill(); }
   else if (p.type === 'bubble') { ctx.beginPath(); ctx.arc(0, 0, 6, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.arc(0, 0, 3.2, 3.7, 4.6); ctx.stroke(); }
+  else if (p.type === 'ghost') { ctx.beginPath(); ctx.ellipse(0, 0, 7.5, 4.8, 0, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.arc(0, 0, 2, 0, TAU); ctx.fill(); ctx.beginPath(); ctx.moveTo(-7, 6.5); ctx.lineTo(7, -6.5); ctx.stroke(); }
   else if (p.type === 'super') { ctx.beginPath(); ctx.arc(0, 0, 8.5, 0, TAU); ctx.stroke(); star(0, .5, 5, 0); }
   else { ctx.beginPath(); ctx.arc(0, 0, 6.5, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, -4); ctx.lineTo(0, 0); ctx.lineTo(3, 2); ctx.stroke(); }
   ctx.restore();
@@ -593,50 +601,66 @@ function drawStars(t) {
   }
   ctx.globalAlpha = 1;
 }
+/* Every group of sprites is drawn inside guarded(), so an error in one of them is logged once and
+   can never stop the ship, bullets or pickups from being drawn (this is what hid the ship when drawUfo went missing). */
+const drawFailed = {};
+function guarded(name, fn) {
+  ctx.save();
+  try { fn(); } catch (e) { if (!drawFailed[name]) { drawFailed[name] = 1; console.error('Draw error in ' + name + ':', e); } }
+  ctx.restore();
+}
 function draw() {
   const t = S.clock;
   ctx.setTransform(canvas.width / W, 0, 0, canvas.height / H, 0, 0);
   ctx.clearRect(0, 0, W, H);
   if (S.shake > 0 && !reduced) ctx.translate(rand(-1, 1) * S.shake * 12, rand(-1, 1) * S.shake * 12);
-  drawStars(t);
-  if (S.state !== 'menu') drawShields();
+  guarded('stars', () => drawStars(t));
+  if (S.state !== 'menu') guarded('shields', drawShields);
   const fr = Math.floor(form ? form.animT * 2 : 0) % 2;
-  if (form && aliens.length) for (const a of aliens) {
-    if (!a.alive) continue;
-    const x = ax(a), y = ay(a) + (S.state === 'menu' ? Math.sin(t * 2 + a.c * .7) * 2 : 0);
-    drawAlien(a.kind, x, y, fr, clamp((P.x - x) / 160, -1, 1) * 1.5, a.r);
-  }
-  if (ufo) drawUfo(ufo, t);
-  if (boss) drawBoss(boss);
-  for (const b of pB) { ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(Math.atan2(b.vx, -b.vy)); ell(0, 0, 3, 8.5, BUTTER); ell(0, 0, 1.4, 5.5, '#fff'); ctx.restore(); }
-  for (const b of eB) { ell(b.x - b.vx * .03, b.y - b.vy * .03, b.r * .7, b.r * 1.1, 'rgba(255,255,255,.25)'); ell(b.x, b.y, b.r, b.r, b.col); ell(b.x - 1, b.y - 1, b.r * .5, b.r * .5, '#fff3fb'); }
-  for (const p of pows) drawPow(p);
-  if (S.state !== 'over' || S.lives > 0) { drawPlayer(); drawShield(); }
-  for (const p of parts) { ctx.globalAlpha = clamp(p.life * 1.6, 0, 1); ctx.fillStyle = p.col; if (p.star) star(p.x, p.y, p.r * 1.4, p.rot); else { ctx.beginPath(); ctx.arc(p.x, p.y, p.r * .8, 0, TAU); ctx.fill(); } }
-  ctx.globalAlpha = 1;
-  ctx.font = `15px ${FONT}`; ctx.textAlign = 'center'; ctx.lineJoin = 'round';
-  for (const p of pops) { ctx.globalAlpha = clamp(p.life * 2, 0, 1); ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.strokeText(p.txt, p.x, p.y); ctx.fillStyle = p.col; ctx.fillText(p.txt, p.x, p.y); }
-  ctx.globalAlpha = 1;
-  if (boss && boss.enter <= 0) {
+  if (form && aliens.length) guarded('aliens', () => {
+    for (const a of aliens) {
+      if (!a.alive) continue;
+      const x = ax(a), y = ay(a) + (S.state === 'menu' ? Math.sin(t * 2 + a.c * .7) * 2 : 0);
+      drawAlien(a.kind, x, y, fr, clamp((P.x - x) / 160, -1, 1) * 1.5, a.r);
+    }
+  });
+  if (ufo) guarded('ufo', () => drawUfo(ufo, t));
+  if (boss) guarded('boss', () => drawBoss(boss));
+  guarded('playerBullets', () => {
+    for (const b of pB) { ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(Math.atan2(b.vx, -b.vy)); ell(0, 0, 3, 8.5, BUTTER); ell(0, 0, 1.4, 5.5, '#fff'); ctx.restore(); }
+  });
+  guarded('enemyBullets', () => {
+    for (const b of eB) { ell(b.x - b.vx * .03, b.y - b.vy * .03, b.r * .7, b.r * 1.1, 'rgba(255,255,255,.25)'); ell(b.x, b.y, b.r, b.r, b.col); ell(b.x - 1, b.y - 1, b.r * .5, b.r * .5, '#fff3fb'); }
+  });
+  guarded('pickups', () => { for (const p of pows) drawPow(p); });
+  if (S.state !== 'over' || S.lives > 0) { guarded('ship', drawPlayer); guarded('shield', drawShield); }
+  guarded('particles', () => {
+    for (const p of parts) { ctx.globalAlpha = clamp(p.life * 1.6, 0, 1); ctx.fillStyle = p.col; if (p.star) star(p.x, p.y, p.r * 1.4, p.rot); else { ctx.beginPath(); ctx.arc(p.x, p.y, p.r * .8, 0, TAU); ctx.fill(); } }
+  });
+  guarded('popups', () => {
+    ctx.font = `15px ${FONT}`; ctx.textAlign = 'center'; ctx.lineJoin = 'round';
+    for (const p of pops) { ctx.globalAlpha = clamp(p.life * 2, 0, 1); ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.strokeText(p.txt, p.x, p.y); ctx.fillStyle = p.col; ctx.fillText(p.txt, p.x, p.y); }
+  });
+  if (boss && boss.enter <= 0) guarded('bossBar', () => {
     const w = W - 80, x = 40, y = 8, pct = clamp(boss.hp / boss.max, 0, 1);
     ctx.fillStyle = 'rgba(10,6,40,.55)'; rr(x - 2, y - 2, w + 4, 14, 7); ctx.fill();
     ctx.fillStyle = PINK; if (pct > 0) { rr(x, y, Math.max(w * pct, 10), 10, 5); ctx.fill(); }
-    ctx.fillStyle = '#fff'; ctx.font = `10px ${FONT}`; ctx.fillText('BOSS', W / 2, y + 8.5);
-  }
+    ctx.fillStyle = '#fff'; ctx.font = `10px ${FONT}`; ctx.textAlign = 'center'; ctx.fillText('BOSS', W / 2, y + 8.5);
+  });
 }
 
 /* ---------- HUD, layout, input ---------- */
 const el = { score: $('score'), best: $('best'), wave: $('wave'), lives: $('livesN'), menuBest: $('menuBest'),
-  chips: { triple: $('chipTriple'), rapid: $('chipRapid'), slow: $('chipSlow'), bubble: $('chipBubble'), super: $('chipSuper') } };
-const lastChip = { triple: -1, rapid: -1, slow: -1, bubble: -1, super: -1 };
-const FX_MAX = { triple: 10, rapid: 10, slow: 6, bubble: BUBBLE_T, super: SUPER_T };
+  chips: { triple: $('chipTriple'), rapid: $('chipRapid'), slow: $('chipSlow'), bubble: $('chipBubble'), super: $('chipSuper'), ghost: $('chipGhost') } };
+const lastChip = { triple: -1, rapid: -1, slow: -1, bubble: -1, super: -1, ghost: -1 };
+const FX_MAX = { triple: 10, rapid: 10, slow: 6, bubble: BUBBLE_T, super: SUPER_T, ghost: GHOST_T };
 function syncHud() {
   if (S.hudDirty) {
     S.hudDirty = false;
     el.score.textContent = S.score; el.best.textContent = Math.max(S.best, S.score);
     el.wave.textContent = Math.max(S.wave, 1); el.lives.textContent = S.lives;
   }
-  for (const k of ['triple', 'rapid', 'slow', 'bubble', 'super']) {
+  for (const k of ['triple', 'rapid', 'slow', 'bubble', 'super', 'ghost']) {
     const v = S.fx[k], q = Math.ceil(v * 10);
     if (q === lastChip[k]) continue; lastChip[k] = q;
     el.chips[k].hidden = v <= 0;

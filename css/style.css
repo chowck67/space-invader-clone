@@ -38,7 +38,7 @@ body:not(.touch) #padL,body:not(.touch) #padR{display:none}
 
 #field{flex:1;min-height:0;position:relative}
 #c{position:absolute;inset:0;margin:auto;display:block}
-#fx{position:absolute;left:8px;top:4px;display:flex;gap:4px;pointer-events:none;z-index:2}
+#fx{position:absolute;left:8px;right:8px;top:4px;display:flex;flex-wrap:wrap;gap:4px;pointer-events:none;z-index:2}
 .chip{position:relative;overflow:hidden;padding:2px 8px 5px;border-radius:99px;font-size:10px;font-weight:900;letter-spacing:.08em;background:rgba(20,12,60,.7);border:1.5px solid var(--glass-edge)}
 .chip i{position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--c);transform-origin:left;transform:scaleX(1)}
 .chip[hidden]{display:none}

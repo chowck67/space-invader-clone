@@ -8,7 +8,7 @@ Boop the blobs, dodge the star-drops, grab power-ups and take down a boss every 
 
 - Portrait and landscape layouts, with on-screen thumb pads (slide across the arrows to steer, hold the star to fire)
 - Keyboard controls on desktop: arrow keys or A / D, Space to fire, P to pause, M to mute
-- Crumbling shields, a mystery UFO, five power-ups (triple shot, rapid fire, bubble shield, slow-mo, and a rare Super shield with 3x the size and 3x the duration of the bubble) and boss waves
+- Crumbling shields, a mystery UFO, six power-ups (triple shot, rapid fire, bubble shield, slow-mo, a Super shield with 3x the size and 3x the duration of the bubble, and 5 seconds of invisibility) and boss waves
 - Easy, Normal and Hard modes, with a saved best score for each
 - Synthesized sound and music (no audio files), plus vibration on supported phones
 - Installable, with an app icon, and fully playable offline
@@ -53,6 +53,15 @@ manifest.webmanifest     app name, colors, icons
 vercel.json              Vercel headers and clean URLs
 icons/                   app icons (SVG sources and PNG sizes)
 scripts/generate_icons.py   regenerates every icon from one SVG template
+```
+
+## Testing
+
+`tests/smoke.py` plays the game in headless Chrome on a desktop and a phone-sized window with every power-up forced to drop. It fails on any error, if a power-up or the UFO never shows up, or if the ship loses a life while invisible. Run it before every push (needs Python with Playwright):
+
+```sh
+python3 tests/smoke.py          # about 2 minutes
+python3 tests/smoke.py --quick  # about 40 seconds
 ```
 
 ## Updating
